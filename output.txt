@@ -1,4 +1,0 @@
-P(B=F, E=T, A=T, M=T, J=F) = 1.3146839999999998E-4
-P(B=T | J=T, M=T) [Fixed Order] = 0.07375276388408394
-P(B=T | J=T, M=T) [Heuristic Order] = 0.07375276388408394
-P(B=T | J=T, M=T) [Brute Force] = 0.07375276388408396
