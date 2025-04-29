@@ -14,7 +14,7 @@ public class Ex1 {
      */
     public static void main(String[] args) throws Exception {
         // Read input file
-        BufferedReader reader = new BufferedReader(new FileReader("input_for_alarm2.txt"));
+        BufferedReader reader = new BufferedReader(new FileReader("input.txt"));
         String networkFile = reader.readLine();
         
         // Load the Bayesian network
@@ -91,30 +91,67 @@ public class Ex1 {
      */
     private static BayesianNetwork.Result processConditionalProbabilityQuery(BayesianNetwork network, String query) {
         // Parse the query: P(B=T|J=T,M=T),1
-        String[] queryParts = query.split(",(?=[0-9])");  // Split on comma followed by a number
-        int algorithmNumber = Integer.parseInt(queryParts[1]);
-        
+        String[] queryParts = query.split(",(?=[0-9]+\\s*$)", 2); // Split on comma followed by digits at the end
+        if (queryParts.length < 2) {
+             System.err.println("Error: Could not parse algorithm number from query: " + query);
+             // Return a default error result or throw exception
+             return new BayesianNetwork.Result(0.0, 0, 0);
+        }
+        int algorithmNumber = Integer.parseInt(queryParts[1].trim());
+
         String probabilityQuery = queryParts[0];
         String[] conditionParts = probabilityQuery.split("\\|");
-        
+
         // Parse query variable
-        String queryAssignment = conditionParts[0].substring(conditionParts[0].indexOf('(') + 1);
-        String[] queryParts2 = queryAssignment.split("=");
-        Map.Entry<String, String> queryVar = new AbstractMap.SimpleEntry<>(queryParts2[0], queryParts2[1]);
-        
+        String queryAssignmentStr = conditionParts[0].substring(conditionParts[0].indexOf('(') + 1).trim();
+        String[] queryVarParts = queryAssignmentStr.split("=");
+        if (queryVarParts.length < 2) {
+            System.err.println("Error: Could not parse query variable from: " + queryAssignmentStr);
+            return new BayesianNetwork.Result(0.0, 0, 0);
+        }
+        Map.Entry<String, String> queryVar = new AbstractMap.SimpleEntry<>(queryVarParts[0].trim(), queryVarParts[1].trim());
+
         // Parse evidence variables
         Map<String, String> evidence = new HashMap<>();
+        Set<String> evidenceVarNames = new HashSet<>();
         if (conditionParts.length > 1) {
-            String evidenceStr = conditionParts[1].substring(0, conditionParts[1].indexOf(')'));
-            String[] evidenceParts = evidenceStr.split(",");
-            
-            for (String evidencePart : evidenceParts) {
-                String[] parts = evidencePart.split("=");
-                evidence.put(parts[0], parts[1]);
+            String evidenceStr = conditionParts[1].substring(0, conditionParts[1].indexOf(')')).trim();
+            if (!evidenceStr.isEmpty()) {
+                String[] evidenceAssignParts = evidenceStr.split(",");
+                for (String evidencePart : evidenceAssignParts) {
+                    String[] parts = evidencePart.split("=");
+                     if (parts.length < 2) {
+                        System.err.println("Error: Could not parse evidence part: " + evidencePart);
+                         continue; // Skip malformed evidence
+                    }
+                    String evVar = parts[0].trim();
+                    String evVal = parts[1].trim();
+                    evidence.put(evVar, evVal);
+                    evidenceVarNames.add(evVar);
+                }
             }
         }
-        
-        // Execute the appropriate algorithm
+
+        // --- Check for Direct CPT Lookup ---
+        List<String> parentsOfQueryVar = network.getParents(queryVar.getKey());
+        Set<String> parentNameSet = new HashSet<>(parentsOfQueryVar);
+
+        boolean isDirectLookup = evidenceVarNames.equals(parentNameSet); // Check if evidence vars exactly match parents
+
+        if (isDirectLookup) {
+            try {
+                // Parents match evidence keys, attempt direct lookup
+                double probability = network.getProbabilityFromCPT(queryVar.getKey(), queryVar.getValue(), evidence);
+                // Per instructions, return 0 counts for direct lookup
+                return new BayesianNetwork.Result(probability, 0, 0);
+            } catch (Exception e) {
+                // This might happen if a value is invalid, but structurally it looked like a direct lookup.
+                // Proceed to regular algorithm calculation in this case.
+                System.err.println("Warning: Direct CPT lookup failed structurally, proceeding with algorithm " + algorithmNumber + ". Error: " + e.getMessage());
+            }
+        }
+
+        // --- Not a direct lookup, execute the appropriate algorithm ---
         switch (algorithmNumber) {
             case 1:
                 return network.inferenceByEnumeration(queryVar, evidence);
@@ -123,7 +160,10 @@ public class Ex1 {
             case 3:
                 return network.algorithm3(queryVar, evidence);
             default:
-                throw new IllegalArgumentException("Unknown algorithm number: " + algorithmNumber);
+                System.err.println("Error: Unknown algorithm number: " + algorithmNumber);
+                // Return a default error result or throw exception
+                return new BayesianNetwork.Result(0.0, 0, 0);
+               // throw new IllegalArgumentException("Unknown algorithm number: " + algorithmNumber);
         }
     }
 } 
