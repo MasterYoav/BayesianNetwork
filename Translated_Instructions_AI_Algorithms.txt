@@ -1,0 +1,49 @@
+Task Instructions for AI Algorithms
+
+1. Overview
+This document defines the submission format for assignments in the AI Algorithms course. The output of your program must exactly match the specifications in this document. A submission that deviates from the format, even slightly (e.g., rounding or spacing), will be automatically disqualified.
+
+2. Input Format
+The input is provided through a file called input.txt and contains several lines:
+- The first line contains the name of the Bayesian network file in XML format (e.g., alarm_net.xml).
+- Each subsequent line contains a single query in one of the following formats:
+  - P(Q=v | E1=v1, E2=v2,...), algorithm_number
+  - P(V1=v1, V2=v2, ...)
+
+Examples:
+alarm_net.xml
+P(B=F,E=T,A=T,M=T,J=F)
+P(B=T|J=T,M=T),1
+P(B=T|J=T,M=T),2
+P(B=T|J=T,M=T),3
+P(J=T|B=T),1
+P(J=T|B=T),2
+P(J=T|B=T),3
+
+Notes:
+- All variables and values must appear in the same format as in the XML file.
+- There may be no white spaces around the comma between the query and the algorithm number.
+
+3. Output Format
+The program should produce an output file named output.txt. Each line in this file corresponds to the result of the query in the same order as in input.txt.
+
+Each line should include:
+<probability>,<number of additions>,<number of multiplications>
+
+Where:
+- The probability is rounded and displayed with exactly 5 digits after the decimal point.
+- Addition operations count only the additions needed to normalize the results.
+- Multiplication operations count all multiplications performed, excluding those in normalization.
+
+Example line:
+0.28112,6,11
+
+Rules:
+- Do not add any extra characters, text, or comments.
+- Do not write explanations or labels.
+- If no operations were needed, write 0.
+- Lines must be written exactly as specified.
+
+4. General Rules
+- Only submit the required files: Ex1.java, BayesianNetwork.java, and any files you created and used directly in the program.
+- Do not submit compiled files or the input/output files.
